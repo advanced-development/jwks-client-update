@@ -1,4 +1,4 @@
-use jwks_client::keyset::KeyStore;
+use jwks_client_update::keyset::KeyStore;
 
 fn main() {
     let key_store = KeyStore::new();
