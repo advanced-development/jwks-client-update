@@ -1,6 +1,6 @@
 use std::time::{Duration, SystemTime};
 
-use base64::{decode_config, URL_SAFE_NO_PAD};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use regex::Regex;
 use reqwest;
 use reqwest::Response;
@@ -199,8 +199,8 @@ impl KeyStore {
 
         let key = self.key_by_id(kid).ok_or(err_key("JWT key does not exists"))?;
 
-        let e = decode_config(&key.e, URL_SAFE_NO_PAD).or(Err(err_cer("Failed to decode exponent")))?;
-        let n = decode_config(&key.n, URL_SAFE_NO_PAD).or(Err(err_cer("Failed to decode modulus")))?;
+        let e = URL_SAFE_NO_PAD.decode(&key.e).or(Err(err_cer("Failed to decode exponent")))?;
+        let n = URL_SAFE_NO_PAD.decode(&key.n).or(Err(err_cer("Failed to decode modulus")))?;
 
         verify_signature(&e, &n, &body, &signature)?;
 
@@ -299,7 +299,7 @@ fn verify_signature(e: &Vec<u8>, n: &Vec<u8>, message: &str, signature: &str) ->
     let pkc = RsaPublicKeyComponents { e, n };
 
     let message_bytes = &message.as_bytes().to_vec();
-    let signature_bytes = decode_config(&signature, URL_SAFE_NO_PAD).or(Err(err_sig("Could not base64 decode signature")))?;
+    let signature_bytes = URL_SAFE_NO_PAD.decode(&signature).or(Err(err_sig("Could not base64 decode signature")))?;
 
     let result = pkc.verify(&RSA_PKCS1_2048_8192_SHA256, &message_bytes, &signature_bytes);
 
@@ -307,7 +307,7 @@ fn verify_signature(e: &Vec<u8>, n: &Vec<u8>, message: &str, signature: &str) ->
 }
 
 fn decode_segment<T: DeserializeOwned>(segment: &str) -> Result<T, Error> {
-    let raw = decode_config(segment, base64::URL_SAFE_NO_PAD).or(Err(err_inv("Failed to decode segment")))?;
+    let raw = URL_SAFE_NO_PAD.decode(segment).or(Err(err_inv("Failed to decode segment")))?;
     let slice = String::from_utf8_lossy(&raw);
     let decoded: T = serde_json::from_str(&slice).or(Err(err_inv("Failed to decode segment")))?;
 
